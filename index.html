@@ -6,7 +6,7 @@
 <title>Entrega • Óptica Cristal</title>
 <link rel="icon" href="logo.png" />
 <style>
-  :root { --bg:#e5f7b7; --card:#121a2b; --text:#e8eefc; --muted:#9fb0d6; --accent:#7cc0ff; }
+  :root { --bg:#0b1220; --card:#121a2b; --text:#e8eefc; --muted:#9fb0d6; --accent:#7cc0ff; }
   *{box-sizing:border-box}
   body{margin:0; font:16px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text);}
   .wrap{max-width:520px;margin:24px auto;padding:16px}
@@ -25,7 +25,7 @@
   .pill{display:inline-block;background:#0f223a;border:1px solid #294a78;color:#b8d5ff;border-radius:999px;padding:6px 10px;margin-top:6px}
   .hr{height:1px;background:#203152;margin:14px 0}
 
-  /* === Lista de coincidencias === */
+  /* Tabla coincidencias */
   .table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px;
            background:#0e1626; border:1px solid #2a3b5f; border-radius: 10px; overflow: hidden; }
   .table th, .table td { padding: 8px 10px; border-bottom: 1px solid #22324f; text-align: left; white-space: nowrap; }
@@ -37,19 +37,17 @@
   .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px;
            border:1px solid #294a78; color:#b8d5ff; background:#0f223a; }
 
-  /* Spinner “Buscando…” */
+  /* Spinner */
   .spinner { display:inline-block; width:14px; height:14px; border:2px solid #6e82ad; border-top-color:transparent; border-radius:50%; vertical-align:-2px; animation:spin 1s linear infinite; margin-right:6px; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Accesibilidad foco tabla */
   .table tr:focus { outline:2px solid #7cc0ff; outline-offset:-2px; }
 
-  /* ======== INPUT + SCAN BUTTON ======== */
+  /* Input + scan */
   .input-row { display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; }
   .scanBtn, .button { padding:12px 14px; border-radius:10px; border:1px solid #2a3b5f; background:#113052; color:#b8d5ff; font-weight:700; text-decoration:none; text-align:center; }
   .scanBtn:hover, .button:hover { background:#14365d; }
 
-  /* ======== MODAL ESCÁNER (estilo del otro código) ======== */
+  /* Modal escáner */
   .scan-modal { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; place-items:center; padding:16px; z-index:9999; }
   .scan-modal.open { display:grid; }
   .scan-box { width:min(520px,96vw); background:var(--card); border:1px solid #1e2a42; border-radius:14px; padding:12px; box-shadow: 0 12px 32px rgba(0,0,0,.45); }
@@ -57,6 +55,15 @@
   .scan-close { padding:10px 12px; border-radius:10px; border:1px solid #2a3b5f; background:#0e1626; color:var(--text); cursor:pointer; }
   .scan-video { width:100%; border-radius:12px; border:1px solid #22324f; background:#000; display:block; }
   .scan-hint { margin-top:8px; font-size:12px; color:#9fb0d6; }
+
+  /* Montos */
+  .moneyCard{background:#0f1a2c;border:1px solid #22324f;border-radius:12px;padding:10px;margin-top:10px}
+  .moneyRow{display:flex;justify-content:space-between;gap:10px;margin:4px 0}
+  .moneyRow .lbl{color:#b8d5ff}
+  .moneyRow .val{font-weight:700}
+  .totalRow{border-top:1px dashed #22324f;margin-top:6px;padding-top:6px}
+  .saldo{color:#8fffb3}
+  .neg{color:#ffcc99}
 </style>
 </head>
 <body>
@@ -75,7 +82,7 @@
 
       <div id="status" class="muted" aria-live="polite"></div>
 
-      <!-- Lista de coincidencias múltiples -->
+      <!-- Lista de coincidencias -->
       <div id="listaWrap" class="hidden">
         <div class="hr"></div>
         <div class="muted">Coincidencias encontradas (elegí una)</div>
@@ -92,6 +99,18 @@
         <!-- Info si YA fue entregado/pagado antes -->
         <div id="entregaInfo" class="muted" style="margin-top:8px;"></div>
 
+        <!-- === Montos === -->
+        <div class="moneyCard" id="montosBox">
+          <div class="moneyRow"><span class="lbl">Armazón</span><span class="val" id="m-armazon">$0,00</span></div>
+          <div class="moneyRow"><span class="lbl">Cristal</span><span class="val" id="m-cristal">$0,00</span></div>
+          <div class="moneyRow"><span class="lbl">Otro concepto</span><span class="val" id="m-otros">$0,00</span></div>
+          <div class="moneyRow"><span class="lbl">Obra social</span><span class="val neg" id="m-obra">$0,00</span></div>
+          <div class="moneyRow totalRow"><span class="lbl">Total</span><span class="val" id="m-total">$0,00</span></div>
+          <div class="moneyRow"><span class="lbl">Seña</span><span class="val" id="m-senia">$0,00</span></div>
+          <div class="moneyRow"><span class="lbl">Pagos previos</span><span class="val" id="m-pagos">$0,00</span></div>
+          <div class="moneyRow"><span class="lbl saldo">Saldo</span><span class="val saldo" id="m-saldo">$0,00</span></div>
+        </div>
+
         <div class="hr"></div>
 
         <label for="entregadoPor">¿Quién entregó?</label>
@@ -99,7 +118,7 @@
 
         <div class="row">
           <div>
-            <label for="cancelo">¿Cuánto pagó?</label>
+            <label for="cancelo">¿Cuánto pagó? <span class="muted">(sugerido: saldo)</span></label>
             <input id="cancelo" type="number" step="0.01" placeholder="0.00" inputmode="decimal" />
           </div>
           <div>
@@ -132,7 +151,7 @@
     </div>
   </div>
 
-  <!-- ==== MODAL ESCANEO (como el otro código) ==== -->
+  <!-- Modal escaneo -->
   <div id="scanModal" class="scan-modal">
     <div id="scanBox" class="scan-box">
       <div class="scan-head">
@@ -148,7 +167,7 @@
   // === TU URL DE APP SCRIPT ===
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2oao4ZVckDweyVZJ1u9rlH72xS4d8UEIR72qxG5fQOuSM4ooLWL9a17lTVD93AzloaQ/exec';
 
-  // ======== UTIL DOM ========
+  // ===== DOM =====
   const $ = (id)=>document.getElementById(id);
   const numeroInput = $('numero');
   const status = $('status');
@@ -166,142 +185,100 @@
   const saveMsg = $('saveMsg');
   const saveErr = $('saveErr');
 
-  // === Escáner (IDs iguales al otro código)
+  // Montos UI
+  const mArmazon = $('m-armazon');
+  const mCristal = $('m-cristal');
+  const mOtros   = $('m-otros');
+  const mObra    = $('m-obra');
+  const mTotal   = $('m-total');
+  const mSenia   = $('m-senia');
+  const mPagos   = $('m-pagos');
+  const mSaldo   = $('m-saldo');
+
+  // Escáner
   const btnScan = $('btnScan');
   const scanModal = $('scanModal');
-  const scanBox = $('scanBox');
   const scanVideo = $('scanVideo');
   const scanClose = $('scanClose');
   const btnScanApp = $('btnScanApp');
   const scanHint = $('scanHint');
 
-  // ======== CACHE (localStorage) ========
-  // Claves
-  const LS_CACHE = 'oc_entrega_cache_v1';    // { numero: {data, ts} }
-  const LS_MRU   = 'oc_entrega_mru_v1';      // [num1,num2,...] últimos consultados
-  const CACHE_TTL_MS = 15 * 60 * 1000;       // 15 minutos
+  // ===== Cache =====
+  const LS_CACHE = 'oc_entrega_cache_v1';
+  const LS_MRU   = 'oc_entrega_mru_v1';
+  const CACHE_TTL_MS = 15 * 60 * 1000;
 
-  // Helpers cache
-  function now(){ return Date.now(); }
-  function readJSON(key, fallback){
-    try{ const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; }catch{ return fallback; }
-  }
-  function writeJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+  const now = ()=>Date.now();
+  function readJSON(k, fb){ try{ const s=localStorage.getItem(k); return s?JSON.parse(s):fb; }catch{ return fb; } }
+  function writeJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  const getCacheMap = ()=> readJSON(LS_CACHE, {});
+  const setCacheMap = (m)=> writeJSON(LS_CACHE, m);
+  function touchMRU(n){ const a=readJSON(LS_MRU,[]); const i=a.indexOf(n); if(i!==-1)a.splice(i,1); a.unshift(n); writeJSON(LS_MRU,a.slice(0,50)); }
+  function saveToCache(n,d){ const m=getCacheMap(); m[String(n)]={data:d,ts:now()}; setCacheMap(m); touchMRU(String(n)); }
+  function getFromCache(n){ const m=getCacheMap(); const r=m[String(n)]; if(!r) return null; if(now()-(r.ts||0)>CACHE_TTL_MS) return null; return r.data; }
+  async function revalidateKeys(keys){ for (const n of keys){ try{ const f=await netLookup(n,{bust:true}); if(f) saveToCache(n,f);}catch{} } }
+  function warmupCacheOnLoad(){ const mru=readJSON(LS_MRU,[]).slice(0,10); if(mru.length) revalidateKeys(mru); }
+  function startAutoRefresh(){ setInterval(()=>{ const mru=readJSON(LS_MRU,[]).slice(0,10); if(mru.length) revalidateKeys(mru);
+    const m=getCacheMap(); let ch=false; for(const k of Object.keys(m)){ if(now()-(m[k].ts||0) > 2*CACHE_TTL_MS){ delete m[k]; ch=true; } } if(ch) setCacheMap(m);
+  }, CACHE_TTL_MS); }
 
-  function getCacheMap(){ return readJSON(LS_CACHE, {}); }
-  function setCacheMap(map){ writeJSON(LS_CACHE, map); }
-
-  function touchMRU(numero){
-    const mru = readJSON(LS_MRU, []);
-    const idx = mru.indexOf(numero);
-    if (idx !== -1) mru.splice(idx,1);
-    mru.unshift(numero);
-    // Limitar a 50 últimos
-    writeJSON(LS_MRU, mru.slice(0,50));
-  }
-
-  function saveToCache(numero, data){
-    const map = getCacheMap();
-    map[String(numero)] = { data, ts: now() };
-    setCacheMap(map);
-    touchMRU(String(numero));
-  }
-
-  function getFromCache(numero){
-    const map = getCacheMap();
-    const rec = map[String(numero)];
-    if (!rec) return null;
-    if (now() - (rec.ts || 0) > CACHE_TTL_MS) return null; // vencido
-    return rec.data;
-  }
-
-  async function revalidateKeys(keys){
-    // revalida (refetch) en segundo plano todas las claves indicadas
-    for (const numero of keys){
-      try{
-        const fresh = await netLookup(numero, { bust: true });
-        if (fresh) saveToCache(numero, fresh);
-      }catch(_e){}
-    }
-  }
-
-  async function warmupCacheOnLoad(){
-    // 1) Si vuelve con ?numero en URL, lo tomará lookup normal.
-    // 2) Tomar MRU y revalidar silenciosamente al abrir.
-    const mru = readJSON(LS_MRU, []).slice(0,10); // top 10 más usados
-    if (mru.length) revalidateKeys(mru);
-  }
-
-  function startAutoRefresh(){
-    // Cada 15 min revalida top 10 MRU
-    setInterval(()=>{
-      const mru = readJSON(LS_MRU, []).slice(0,10);
-      if (mru.length) revalidateKeys(mru);
-      // limpiar entradas muy viejas (2× TTL)
-      const map = getCacheMap();
-      let changed = false;
-      for (const k of Object.keys(map)){
-        if (now() - (map[k].ts || 0) > (2*CACHE_TTL_MS)){ delete map[k]; changed = true; }
-      }
-      if (changed) setCacheMap(map);
-    }, CACHE_TTL_MS);
-  }
-
-  // ======== NETWORK LAYER ========
-  function withParams(base, params){
-    const u = new URL(base);
-    Object.entries(params).forEach(([k,v]) => (v!==undefined && v!==null) && u.searchParams.set(k, v));
-    return u.toString();
-  }
+  // ===== Utils =====
+  function withParams(base, params){ const u = new URL(base); Object.entries(params).forEach(([k,v]) => (v!==undefined && v!==null) && u.searchParams.set(k, v)); return u.toString(); }
   const normStr = (v)=> (v==null ? '' : String(v)).trim();
-
-  async function netLookup(numero, { bust=false } = {}){
-    const url = withParams(SCRIPT_URL, { action:'lookup', numero, ...(bust ? { _: String(Date.now()) } : {}) });
-    const res = await fetch(url, { method:'GET', cache: 'no-store' });
-    if (!res.ok) throw new Error('Error de red');
-    const data = await res.json();
-    // Normalizamos: devolver { items:[...] } o un único objeto
-    if (Array.isArray(data)) return data;
-    if (data.ok === false) throw new Error(data.error || 'No encontrado');
-    if (Array.isArray(data.items || data.results)) return (data.items || data.results);
-    return data; // objeto único
-  }
-
-  function setStatusLoading(msg='Buscando…'){
-    status.innerHTML = '<span class="spinner" aria-hidden="true"></span>' + msg;
-  }
+  function setStatusLoading(msg='Buscando…'){ status.innerHTML = '<span class="spinner"></span>'+msg; }
   function clearStatus(){ status.textContent = ''; }
 
   function pick(obj, keys){
-    for (const k of keys){
-      if (obj && obj[k] != null && String(obj[k]).toString().trim() !== '') return String(obj[k]);
-    }
+    for (const k of keys){ if (obj && obj[k]!=null && String(obj[k]).toString().trim()!=='') return String(obj[k]); }
     return '';
   }
+  function pickNum(obj, keys){
+    const s = pick(obj, keys);
+    if (!s) return 0;
+    const n = Number(String(s).replace(/\./g,'').replace(',', '.').replace(/[^0-9\.\-]/g,''));
+    return isFinite(n) ? n : 0;
+  }
+  const fmt = (n)=> new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:2}).format(Number(n||0));
 
-  function renderEntregaInfo(item){
-    entregaInfo.textContent = '';
-    entregaInfo.classList.add('hidden');
-    if (!item) return;
+  // ===== Totales =====
+  function computeMontos(item){
+    // Leer piezas con nombres flexibles
+    const armazon = pickNum(item, ['armazonPrecio','precioArmazon','precio_armazon','precio_armazón','armazon_precio','precioPublicoArmazon']);
+    const cristal = pickNum(item, ['cristalPrecio','precioCristal','precio_cristal','precioCristales']);
+    const otros   = pickNum(item, ['otros','otroConcepto','otrosConceptos','adicional','extra','otro_monto']);
+    // Obra social: lo tratamos como DESCUENTO (resta). Si en tu planilla ya viene con signo negativo, igual funciona.
+    let obra      = pickNum(item, ['obraSocial','obra_social','montoObraSocial','descuentoObraSocial']);
+    const totalVista = pickNum(item, ['total','total_pesos','importeTotal','totalCliente']);
+    const senia   = pickNum(item, ['seña','senia','seña_monto','seniaMonto']);
+    // Pagos previos acumulados (si los hay)
+    const pagosPrev = pickNum(item, ['pagado','pagos','pagosPrevios','totalPagos','pago_acumulado']);
 
-    const fecha = pick(item, ['entregadoEl','fechaEntrega','entregadoFecha','fechaHora','fecha_y_hora','fecha_entrega','fh','fecha']);
-    const quien = pick(item, ['entregadoPor','entrego','vendedorEntrega','entregado_por','entrega_por']);
-    const medio = pick(item, ['fdm','medioPago','formaDePago','pagoMedio','medio_pago']);
-    const otro  = pick(item, ['fdmOtro','medioPagoOtro','otro','pago_otro']);
-    const monto = pick(item, ['cancelo','monto','importe','pagado','pago_importe']);
+    // Total: si la planilla ya lo calcula, usamos ese; si no, sumamos piezas y restamos obra social
+    const total = totalVista > 0 ? totalVista : (armazon + cristal + otros - obra);
 
-    if (fecha || quien || medio || monto){
-      const medioTxt = (medio === 'OTRO' && otro) ? `OTRO (${otro})` : (medio || '');
-      const partes = [];
-      if (fecha) partes.push(`Entregado el ${fecha}`);
-      if (quien) partes.push(`por ${quien}`);
-      if (medioTxt) partes.push(`• FDM: ${medioTxt}`);
-      if (monto) partes.push(`• Importe: ${monto}`);
-      entregaInfo.textContent = partes.join(' ');
-      entregaInfo.classList.remove('hidden');
-    }
+    // Saldo: Total - Seña - Pagos previos (nunca negativo)
+    let saldo = total - senia - pagosPrev;
+    if (saldo < 0) saldo = 0;
+
+    return { armazon, cristal, otros, obra, total, senia, pagosPrev, saldo };
   }
 
+  function renderMontos(item){
+    const m = computeMontos(item);
+    mArmazon.textContent = fmt(m.armazon);
+    mCristal.textContent = fmt(m.cristal);
+    mOtros.textContent   = fmt(m.otros);
+    mObra.textContent    = fmt(-Math.abs(m.obra) || 0); // se muestra como descuento
+    mTotal.textContent   = fmt(m.total);
+    mSenia.textContent   = fmt(m.senia);
+    mPagos.textContent   = fmt(m.pagosPrev);
+    mSaldo.textContent   = fmt(m.saldo);
+
+    // Prefill del importe a cobrar ahora (editable)
+    cancelo.value = m.saldo > 0 ? m.saldo.toFixed(2) : '';
+  }
+
+  // ===== UI lista / selección =====
   function renderLista(items){
     listaTable.innerHTML = '';
     const thead = document.createElement('thead');
@@ -325,8 +302,7 @@
         <td>${normStr(it.dni)}</td>
         <td>${normStr(it.telefono || it.tel)}</td>
         <td>${normStr(it.estado) ? `<span class="badge">${it.estado}</span>`:''}</td>
-        <td>${normStr(it.retira || it.fechaRetira || it.retiro)}</td>
-      `;
+        <td>${normStr(it.retira || it.fechaRetira || it.retiro)}</td>`;
       tr.addEventListener('click', ()=> chooseItem(it));
       tr.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter') chooseItem(it); });
       tbody.appendChild(tr);
@@ -336,21 +312,40 @@
     listaTable.appendChild(tbody);
     listaWrap.classList.remove('hidden');
   }
-  function hideLista(){
-    listaWrap.classList.add('hidden');
-    listaTable.innerHTML = '';
-  }
+  function hideLista(){ listaWrap.classList.add('hidden'); listaTable.innerHTML = ''; }
 
-  function resetFormFields(){
-    entregadoPor.value = '';
-    cancelo.value = '';
-    fdm.value = '';
-    fdmOtro.value = '';
-    fdmOtroWrap.classList.add('hidden');
+  function renderEntregaInfo(item){
+    entregaInfo.textContent = '';
+    entregaInfo.classList.add('hidden');
+    if (!item) return;
+
+    const fecha = pick(item, ['entregadoEl','fechaEntrega','entregadoFecha','fechaHora','fecha_y_hora','fecha_entrega','fh','fecha']);
+    const quien = pick(item, ['entregadoPor','entrego','vendedorEntrega','entregado_por','entrega_por']);
+    const medio = pick(item, ['fdm','medioPago','formaDePago','pagoMedio','medio_pago']);
+    const otro  = pick(item, ['fdmOtro','medioPagoOtro','otro','pago_otro']);
+    const monto = pick(item, ['cancelo','monto','importe','pagado','pago_importe']);
+    if (fecha || quien || medio || monto){
+      const medioTxt = (medio === 'OTRO' && otro) ? `OTRO (${otro})` : (medio || '');
+      const partes = [];
+      if (fecha) partes.push(`Entregado el ${fecha}`);
+      if (quien) partes.push(`por ${quien}`);
+      if (medioTxt) partes.push(`• FDM: ${medioTxt}`);
+      if (monto) partes.push(`• Importe: ${monto}`);
+      entregaInfo.textContent = partes.join(' ');
+      entregaInfo.classList.remove('hidden');
+    }
   }
 
   let currentNumero = null;
   let currentRawItem = null;
+
+  function resetFormFields(){
+    entregadoPor.value = '';
+    // cancelo se setea con el saldo automáticamente
+    fdm.value = '';
+    fdmOtro.value = '';
+    fdmOtroWrap.classList.add('hidden');
+  }
 
   function chooseItem(item){
     const numero = item.numero || item.nro || item.num;
@@ -362,10 +357,22 @@
     resultado.classList.remove('hidden');
     guardarBtn.disabled = false;
     resetFormFields();
-    renderEntregaInfo(item);
+    renderMontos(item);      // ⬅️ dibuja montos y prellena saldo
+    renderEntregaInfo(item); // ⬅️ info previa
     entregadoPor.focus();
-    // Guardar en cache este item puntual
     if (numero) saveToCache(String(numero), item);
+  }
+
+  // ===== Net =====
+  async function netLookup(numero, { bust=false } = {}){
+    const url = withParams(SCRIPT_URL, { action:'lookup', numero, ...(bust ? { _: String(Date.now()) } : {}) });
+    const res = await fetch(url, { method:'GET', cache: 'no-store' });
+    if (!res.ok) throw new Error('Error de red');
+    const data = await res.json();
+    if (Array.isArray(data)) return data;
+    if (data.ok === false) throw new Error(data.error || 'No encontrado');
+    if (Array.isArray(data.items || data.results)) return (data.items || data.results);
+    return data;
   }
 
   async function lookup(numero){
@@ -379,42 +386,21 @@
     currentNumero = null;
     currentRawItem = null;
 
-    // 1) cache primero
     const cached = getFromCache(numero);
     if (cached){
       clearStatus();
-      // Puede ser 1 objeto o lista cacheada
-      if (Array.isArray(cached)){
-        if (cached.length === 1) chooseItem(cached[0]);
-        else { status.textContent = `Se encontraron ${cached.length} coincidencias (caché)`; renderLista(cached); }
-      } else {
-        chooseItem(cached);
-      }
-      // Revalidar en segundo plano
-      netLookup(numero, { bust:true }).then(data=>{
-        if (!data) return;
-        saveToCache(String(numero), data);
-      }).catch(()=>{});
+      if (Array.isArray(cached)){ cached.length===1 ? chooseItem(cached[0]) : (status.textContent=`Se encontraron ${cached.length} coincidencias (caché)`, renderLista(cached)); }
+      else chooseItem(cached);
+      netLookup(numero, {bust:true}).then(d=>{ if(d) saveToCache(String(numero), d); }).catch(()=>{});
       return;
     }
 
-    // 2) red
     try{
       const data = await netLookup(numero);
       clearStatus();
-      // guardar cache
       saveToCache(String(numero), data);
-
-      if (Array.isArray(data)){
-        if (data.length === 0) throw new Error('No encontrado');
-        if (data.length === 1) { chooseItem(data[0]); }
-        else {
-          status.textContent = `Se encontraron ${data.length} coincidencias`;
-          renderLista(data);
-        }
-      } else {
-        chooseItem(data);
-      }
+      if (Array.isArray(data)){ data.length===1 ? chooseItem(data[0]) : (status.textContent = `Se encontraron ${data.length} coincidencias`, renderLista(data)); }
+      else chooseItem(data);
     }catch(e){
       clearStatus();
       resultado.classList.add('hidden');
@@ -423,77 +409,51 @@
     }
   }
 
-  // ========= SAVE =========
+  // ===== Save =====
   async function save(){
     saveMsg.classList.add('hidden');
     saveErr.classList.add('hidden');
 
     const ep  = normStr(entregadoPor.value);
-    const aj  = normStr(cancelo.value);
+    const aj  = normStr(cancelo.value); // lo que paga ahora (prelleno con saldo)
     const ak  = normStr(fdm.value);
     const akOtro = normStr(fdmOtro.value);
 
-    if (!currentNumero){
-      saveErr.textContent = 'Primero buscá y elegí un número válido.';
-      saveErr.classList.remove('hidden');
-      return;
-    }
-    if (!ep){
-      saveErr.textContent = 'Completá "Quién entregó".';
-      saveErr.classList.remove('hidden');
-      entregadoPor.focus();
-      return;
-    }
-    if (!ak){
-      saveErr.textContent = 'Elegí el medio de pago.';
-      saveErr.classList.remove('hidden');
-      fdm.focus();
-      return;
-    }
-    if (ak === 'OTRO' && !akOtro){
-      saveErr.textContent = 'Especificá el medio de pago en "OTRO".';
-      saveErr.classList.remove('hidden');
-      fdmOtro.focus();
-      return;
-    }
+    if (!currentNumero){ saveErr.textContent='Primero buscá y elegí un número válido.'; saveErr.classList.remove('hidden'); return; }
+    if (!ep){ saveErr.textContent='Completá "Quién entregó".'; saveErr.classList.remove('hidden'); entregadoPor.focus(); return; }
+    if (!ak){ saveErr.textContent='Elegí el medio de pago.';   saveErr.classList.remove('hidden'); fdm.focus(); return; }
+    if (ak === 'OTRO' && !akOtro){ saveErr.textContent='Especificá el medio de pago en "OTRO".'; saveErr.classList.remove('hidden'); fdmOtro.focus(); return; }
 
     guardarBtn.disabled = true;
     const oldTxt = guardarBtn.textContent;
     guardarBtn.textContent = 'Guardando…';
 
     try{
-      const url = withParams(SCRIPT_URL, {
-        action:'save',
-        numero: currentNumero,
-        entregadoPor: ep,
-        cancelo: aj,
-        fdm: ak,
-        fdmOtro: akOtro
-      });
+      const url = withParams(SCRIPT_URL, { action:'save', numero: currentNumero, entregadoPor: ep, cancelo: aj, fdm: ak, fdmOtro: akOtro });
       const res = await fetch(url, { method:'GET', cache:'no-store' });
       if (!res.ok) throw new Error('Error de red');
       const data = await res.json();
+      if (data.ok === false) throw new Error(data.error || 'No se pudo guardar');
 
-      if (data.ok === false){
-        throw new Error(data.error || 'No se pudo guardar');
-      }
       saveErr.classList.add('hidden');
       saveMsg.classList.remove('hidden');
       guardarBtn.textContent = oldTxt;
       guardarBtn.disabled = false;
 
-      // Actualizo info mostrada y cache
+      // Actualizar info y cache local
       const updated = {
         ...(currentRawItem || {}),
         entregadoPor: ep,
-        cancelo: aj,
         fdm: ak,
         fdmOtro: akOtro,
+        // sumamos pago actual a "pagos previos" si tu hoja devuelve acumulado en data, mejor usarlo
+        // acá lo hacemos local por si no vuelve:
+        pagado: (pickNum(currentRawItem||{}, ['pagado','pagos','pagosPrevios','totalPagos']) + Number(aj || 0)),
         entregadoEl: pick(data, ['fecha','fechaEntrega','entregadoEl','fh','fechaHora']) || pick(currentRawItem||{}, ['entregadoEl','fechaEntrega','fechaHora']) || ''
       };
       currentRawItem = updated;
       renderEntregaInfo(updated);
-      // Persistir en caché
+      renderMontos(updated); // recalcula saldo local
       saveToCache(String(currentNumero), updated);
     }catch(e){
       saveErr.textContent = e.message || 'Error guardando';
@@ -503,42 +463,27 @@
     }
   }
 
-  // ---- Eventos base ----
-  numeroInput.addEventListener('keydown', (ev)=>{
-    if (ev.key === 'Enter'){
-      const val = normStr(numeroInput.value);
-      if (val) lookup(val);
-    }
-  });
+  // ===== Eventos base =====
+  numeroInput.addEventListener('keydown', (ev)=>{ if (ev.key === 'Enter'){ const v=normStr(numeroInput.value); if(v) lookup(v); } });
   $('guardarBtn').addEventListener('click', save);
+  fdm.addEventListener('change', ()=>{ const isOtro = fdm.value === 'OTRO'; fdmOtroWrap.classList.toggle('hidden', !isOtro); if(!isOtro) fdmOtro.value=''; });
 
-  // Mostrar/ocultar campo “OTRO”
-  fdm.addEventListener('change', ()=>{
-    const isOtro = fdm.value === 'OTRO';
-    fdmOtroWrap.classList.toggle('hidden', !isOtro);
-    if (!isOtro) fdmOtro.value = '';
-  });
-
-  // ====================== ESCÁNER CON CÁMARA (idéntico estilo al otro) ======================
-  let mediaStream = null;
-  let detector = null;
-  let rafId = 0;
-
-  function supportsBarcodeDetector(){ return 'BarcodeDetector' in window; }
+  // ===== Escáner (igual al otro) =====
+  let mediaStream=null, detector=null, rafId=0;
+  const supportsBarcodeDetector = ()=> 'BarcodeDetector' in window;
 
   async function openScanner(){
     scanModal.classList.add('open');
-    const video = scanVideo;
     try{
       mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio:false });
-      video.srcObject = mediaStream;
-      await video.play();
+      scanVideo.srcObject = mediaStream;
+      await scanVideo.play();
 
       if (supportsBarcodeDetector()){
         detector = new BarcodeDetector({ formats: ['code_128','ean_13','ean_8','upc_a','upc_e','code_39','qr_code'] });
         const tick = async () => {
           try{
-            const codes = await detector.detect(video);
+            const codes = await detector.detect(scanVideo);
             if (codes && codes.length){
               const code = (codes[0].rawValue || '').trim();
               if (code){
@@ -548,7 +493,7 @@
                 return;
               }
             }
-          }catch(e){ /* ignore frame errors */ }
+          }catch(e){}
           rafId = requestAnimationFrame(tick);
         };
         rafId = requestAnimationFrame(tick);
@@ -560,65 +505,35 @@
       closeScanner();
     }
   }
-
-  function stopScanner(){
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = 0;
-    if (mediaStream){
-      mediaStream.getTracks().forEach(t=>t.stop());
-      mediaStream = null;
-    }
-  }
-
-  function closeScanner(){
-    stopScanner();
-    scanModal.classList.remove('open');
-  }
-
+  function stopScanner(){ if (rafId) cancelAnimationFrame(rafId); rafId=0; if (mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; } }
+  function closeScanner(){ stopScanner(); scanModal.classList.remove('open'); }
   function buildZxingLink(){
     const here = new URL(window.location.href);
     const ret = new URL(here.href);
-    ret.searchParams.set('via', 'scanapp');
-    ret.searchParams.set('numero', '{CODE}');
-    const params = new URLSearchParams({
-      ret: ret.toString(),
-      SCAN_FORMATS: 'CODE_128,EAN_13,EAN_8,UPC_A,UPC_E,QR_CODE'
-    });
+    ret.searchParams.set('via','scanapp');
+    ret.searchParams.set('numero','{CODE}');
+    const params = new URLSearchParams({ ret: ret.toString(), SCAN_FORMATS:'CODE_128,EAN_13,EAN_8,UPC_A,UPC_E,QR_CODE' });
     return `zxing://scan/?${params.toString()}`;
   }
-
   function applyQueryPrefill(){
     const q = new URLSearchParams(window.location.search);
     const nro = q.get('numero') || q.get('nro');
-    if (nro){
-      numeroInput.value = nro.trim();
-      lookup(nro.trim());
-    }
+    if (nro){ numeroInput.value = nro.trim(); lookup(nro.trim()); }
   }
-
-  // Eventos escáner
   btnScan.addEventListener('click', openScanner);
   scanClose.addEventListener('click', closeScanner);
-  document.addEventListener('click', (e)=>{
-    if (!scanModal.classList.contains('open')) return;
-    if (e.target === scanModal){ closeScanner(); }
-  });
+  document.addEventListener('click', (e)=>{ if (!scanModal.classList.contains('open')) return; if (e.target===scanModal){ closeScanner(); } });
 
-  // ====================== INIT ======================
+  // ===== Init =====
   document.addEventListener('DOMContentLoaded', ()=>{
-    // foco al abrir
-    numeroInput.focus();
-
-    // warmup de cache con MRU y auto-refresh cada 15'
-    warmupCacheOnLoad();
-    startAutoRefresh();
-
-    // Link app externa de escaneo (ZXing)
-    const zxing = buildZxingLink();
-    btnScanApp.setAttribute('href', zxing);
-
-    // Si volvemos con ?numero=...
+    numeroInput.focus();               // foco al abrir
+    warmupCacheOnLoad(); startAutoRefresh();
+    const zxing = buildZxingLink(); btnScanApp.setAttribute('href', zxing);
     applyQueryPrefill();
+
+    // Ocultar "Abrir app de escaneo" si no aporta (no Android o ya tenemos detector nativo)
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (!isAndroid || ('BarcodeDetector' in window)) { btnScanApp.style.display='none'; }
   });
 </script>
 </body>
