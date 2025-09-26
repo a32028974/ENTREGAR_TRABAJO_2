@@ -6,7 +6,7 @@
 <title>Entrega • Óptica Cristal</title>
 <link rel="icon" href="logo.png" />
 <style>
-  :root { --bg:#FFFFFF; --card:#121a2b; --text:#e8eefc; --muted:#9fb0d6; --accent:#7cc0ff; }
+  :root { --bg:#0b1220; --card:#121a2b; --text:#e8eefc; --muted:#9fb0d6; --accent:#7cc0ff; }
   *{box-sizing:border-box}
   body{margin:0; font:16px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text);}
   .wrap{max-width:520px;margin:24px auto;padding:16px}
@@ -25,7 +25,6 @@
   .pill{display:inline-block;background:#0f223a;border:1px solid #294a78;color:#b8d5ff;border-radius:999px;padding:6px 10px;margin-top:6px}
   .hr{height:1px;background:#203152;margin:14px 0}
 
-  /* Tabla coincidencias */
   .table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px;
            background:#0e1626; border:1px solid #2a3b5f; border-radius: 10px; overflow: hidden; }
   .table th, .table td { padding: 8px 10px; border-bottom: 1px solid #22324f; text-align: left; white-space: nowrap; }
@@ -34,18 +33,13 @@
   .table tr { cursor: pointer; }
   .table tr:hover { background:#0f223a; }
   .table .num { font-weight:700; color:#9fd1ff; }
-  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px;
-           border:1px solid #294a78; color:#b8d5ff; background:#0f223a; }
 
-  /* Spinner */
   .spinner { display:inline-block; width:14px; height:14px; border:2px solid #6e82ad; border-top-color:transparent; border-radius:50%; vertical-align:-2px; animation:spin 1s linear infinite; margin-right:6px; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .table tr:focus { outline:2px solid #7cc0ff; outline-offset:-2px; }
 
-  /* Input + scan */
   .input-row { display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; }
-  .scanBtn, .button { padding:12px 14px; border-radius:10px; border:1px solid #2a3b5f; background:#113052; color:#b8d5ff; font-weight:700; text-decoration:none; text-align:center; }
-  .scanBtn:hover, .button:hover { background:#14365d; }
+  .scanBtn { padding:12px 14px; border-radius:10px; border:1px solid #2a3b5f; background:#113052; color:#b8d5ff; font-weight:700; }
+  .scanBtn:hover { background:#14365d; }
 
   /* Modal escáner */
   .scan-modal { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; place-items:center; padding:16px; z-index:9999; }
@@ -69,15 +63,12 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Registrar entrega / pago de saldo</h1>
+      <h1> v1 Registrar entrega / pago de saldo</h1>
 
       <label for="numero">Número de trabajo</label>
       <div class="input-row">
         <input id="numero" type="text" inputmode="numeric" placeholder="Escribí el número y presioná Enter" autocomplete="off" />
         <button id="btnScan" class="scanBtn" type="button">📷 Escanear</button>
-      </div>
-      <div style="margin-top:8px; display:flex; gap:8px;">
-        <a id="btnScanApp" class="button" href="#">Abrir app de escaneo</a>
       </div>
 
       <div id="status" class="muted" aria-live="polite"></div>
@@ -96,10 +87,9 @@
         <div class="muted">Paciente</div>
         <div id="paciente" class="pill"></div>
 
-        <!-- Info si YA fue entregado/pagado antes -->
         <div id="entregaInfo" class="muted" style="margin-top:8px;"></div>
 
-        <!-- === Montos === -->
+        <!-- Montos -->
         <div class="moneyCard" id="montosBox">
           <div class="moneyRow"><span class="lbl">Armazón</span><span class="val" id="m-armazon">$0,00</span></div>
           <div class="moneyRow"><span class="lbl">Cristal</span><span class="val" id="m-cristal">$0,00</span></div>
@@ -137,7 +127,6 @@
           </div>
         </div>
 
-        <!-- Campo libre SOLO si elige OTRO -->
         <div id="wrapFdmOtro" class="hidden">
           <label for="fdmOtro">Especificá el medio de pago</label>
           <input id="fdmOtro" type="text" placeholder="Ej: CHEQUE, VALE, PROMO X, etc." autocomplete="off" />
@@ -164,10 +153,9 @@
   </div>
 
 <script>
-  // === TU URL DE APP SCRIPT ===
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2oao4ZVckDweyVZJ1u9rlH72xS4d8UEIR72qxG5fQOuSM4ooLWL9a17lTVD93AzloaQ/exec';
 
-  // ===== DOM =====
+  // DOM
   const $ = (id)=>document.getElementById(id);
   const numeroInput = $('numero');
   const status = $('status');
@@ -195,15 +183,14 @@
   const mPagos   = $('m-pagos');
   const mSaldo   = $('m-saldo');
 
-  // Escáner
+  // Escáner nativo
   const btnScan = $('btnScan');
   const scanModal = $('scanModal');
   const scanVideo = $('scanVideo');
   const scanClose = $('scanClose');
-  const btnScanApp = $('btnScanApp');
   const scanHint = $('scanHint');
 
-  // ===== Cache =====
+  // Cache
   const LS_CACHE = 'oc_entrega_cache_v1';
   const LS_MRU   = 'oc_entrega_mru_v1';
   const CACHE_TTL_MS = 15 * 60 * 1000;
@@ -222,7 +209,7 @@
     const m=getCacheMap(); let ch=false; for(const k of Object.keys(m)){ if(now()-(m[k].ts||0) > 2*CACHE_TTL_MS){ delete m[k]; ch=true; } } if(ch) setCacheMap(m);
   }, CACHE_TTL_MS); }
 
-  // ===== Utils =====
+  // Utils
   function withParams(base, params){ const u = new URL(base); Object.entries(params).forEach(([k,v]) => (v!==undefined && v!==null) && u.searchParams.set(k, v)); return u.toString(); }
   const normStr = (v)=> (v==null ? '' : String(v)).trim();
   function setStatusLoading(msg='Buscando…'){ status.innerHTML = '<span class="spinner"></span>'+msg; }
@@ -240,26 +227,17 @@
   }
   const fmt = (n)=> new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:2}).format(Number(n||0));
 
-  // ===== Totales =====
+  // Totales
   function computeMontos(item){
-    // Leer piezas con nombres flexibles
     const armazon = pickNum(item, ['armazonPrecio','precioArmazon','precio_armazon','precio_armazón','armazon_precio','precioPublicoArmazon']);
     const cristal = pickNum(item, ['cristalPrecio','precioCristal','precio_cristal','precioCristales']);
     const otros   = pickNum(item, ['otros','otroConcepto','otrosConceptos','adicional','extra','otro_monto']);
-    // Obra social: lo tratamos como DESCUENTO (resta). Si en tu planilla ya viene con signo negativo, igual funciona.
-    let obra      = pickNum(item, ['obraSocial','obra_social','montoObraSocial','descuentoObraSocial']);
+    let   obra    = pickNum(item, ['obraSocial','obra_social','montoObraSocial','descuentoObraSocial']);
     const totalVista = pickNum(item, ['total','total_pesos','importeTotal','totalCliente']);
     const senia   = pickNum(item, ['seña','senia','seña_monto','seniaMonto']);
-    // Pagos previos acumulados (si los hay)
     const pagosPrev = pickNum(item, ['pagado','pagos','pagosPrevios','totalPagos','pago_acumulado']);
-
-    // Total: si la planilla ya lo calcula, usamos ese; si no, sumamos piezas y restamos obra social
     const total = totalVista > 0 ? totalVista : (armazon + cristal + otros - obra);
-
-    // Saldo: Total - Seña - Pagos previos (nunca negativo)
-    let saldo = total - senia - pagosPrev;
-    if (saldo < 0) saldo = 0;
-
+    let saldo = total - senia - pagosPrev; if (saldo < 0) saldo = 0;
     return { armazon, cristal, otros, obra, total, senia, pagosPrev, saldo };
   }
 
@@ -268,17 +246,15 @@
     mArmazon.textContent = fmt(m.armazon);
     mCristal.textContent = fmt(m.cristal);
     mOtros.textContent   = fmt(m.otros);
-    mObra.textContent    = fmt(-Math.abs(m.obra) || 0); // se muestra como descuento
+    mObra.textContent    = fmt(-Math.abs(m.obra) || 0); // mostrar como descuento
     mTotal.textContent   = fmt(m.total);
     mSenia.textContent   = fmt(m.senia);
     mPagos.textContent   = fmt(m.pagosPrev);
     mSaldo.textContent   = fmt(m.saldo);
-
-    // Prefill del importe a cobrar ahora (editable)
     cancelo.value = m.saldo > 0 ? m.saldo.toFixed(2) : '';
   }
 
-  // ===== UI lista / selección =====
+  // Lista / selección
   function renderLista(items){
     listaTable.innerHTML = '';
     const thead = document.createElement('thead');
@@ -341,7 +317,6 @@
 
   function resetFormFields(){
     entregadoPor.value = '';
-    // cancelo se setea con el saldo automáticamente
     fdm.value = '';
     fdmOtro.value = '';
     fdmOtroWrap.classList.add('hidden');
@@ -357,13 +332,13 @@
     resultado.classList.remove('hidden');
     guardarBtn.disabled = false;
     resetFormFields();
-    renderMontos(item);      // ⬅️ dibuja montos y prellena saldo
-    renderEntregaInfo(item); // ⬅️ info previa
+    renderMontos(item);
+    renderEntregaInfo(item);
     entregadoPor.focus();
     if (numero) saveToCache(String(numero), item);
   }
 
-  // ===== Net =====
+  // Net
   async function netLookup(numero, { bust=false } = {}){
     const url = withParams(SCRIPT_URL, { action:'lookup', numero, ...(bust ? { _: String(Date.now()) } : {}) });
     const res = await fetch(url, { method:'GET', cache: 'no-store' });
@@ -409,13 +384,13 @@
     }
   }
 
-  // ===== Save =====
+  // Save
   async function save(){
     saveMsg.classList.add('hidden');
     saveErr.classList.add('hidden');
 
     const ep  = normStr(entregadoPor.value);
-    const aj  = normStr(cancelo.value); // lo que paga ahora (prelleno con saldo)
+    const aj  = normStr(cancelo.value);
     const ak  = normStr(fdm.value);
     const akOtro = normStr(fdmOtro.value);
 
@@ -440,20 +415,17 @@
       guardarBtn.textContent = oldTxt;
       guardarBtn.disabled = false;
 
-      // Actualizar info y cache local
       const updated = {
         ...(currentRawItem || {}),
         entregadoPor: ep,
         fdm: ak,
         fdmOtro: akOtro,
-        // sumamos pago actual a "pagos previos" si tu hoja devuelve acumulado en data, mejor usarlo
-        // acá lo hacemos local por si no vuelve:
         pagado: (pickNum(currentRawItem||{}, ['pagado','pagos','pagosPrevios','totalPagos']) + Number(aj || 0)),
         entregadoEl: pick(data, ['fecha','fechaEntrega','entregadoEl','fh','fechaHora']) || pick(currentRawItem||{}, ['entregadoEl','fechaEntrega','fechaHora']) || ''
       };
       currentRawItem = updated;
       renderEntregaInfo(updated);
-      renderMontos(updated); // recalcula saldo local
+      renderMontos(updated);
       saveToCache(String(currentNumero), updated);
     }catch(e){
       saveErr.textContent = e.message || 'Error guardando';
@@ -463,12 +435,12 @@
     }
   }
 
-  // ===== Eventos base =====
+  // Eventos base
   numeroInput.addEventListener('keydown', (ev)=>{ if (ev.key === 'Enter'){ const v=normStr(numeroInput.value); if(v) lookup(v); } });
   $('guardarBtn').addEventListener('click', save);
   fdm.addEventListener('change', ()=>{ const isOtro = fdm.value === 'OTRO'; fdmOtroWrap.classList.toggle('hidden', !isOtro); if(!isOtro) fdmOtro.value=''; });
 
-  // ===== Escáner (igual al otro) =====
+  // Escáner nativo (sin app externa)
   let mediaStream=null, detector=null, rafId=0;
   const supportsBarcodeDetector = ()=> 'BarcodeDetector' in window;
 
@@ -498,7 +470,7 @@
         };
         rafId = requestAnimationFrame(tick);
       } else {
-        scanHint.textContent = 'Tu navegador no soporta escaneo directo. Usá “Abrir app de escaneo”.';
+        scanHint.textContent = 'Tu navegador no soporta escaneo directo.';
       }
     }catch(e){
       alert('No se pudo acceder a la cámara.');
@@ -507,33 +479,16 @@
   }
   function stopScanner(){ if (rafId) cancelAnimationFrame(rafId); rafId=0; if (mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; } }
   function closeScanner(){ stopScanner(); scanModal.classList.remove('open'); }
-  function buildZxingLink(){
-    const here = new URL(window.location.href);
-    const ret = new URL(here.href);
-    ret.searchParams.set('via','scanapp');
-    ret.searchParams.set('numero','{CODE}');
-    const params = new URLSearchParams({ ret: ret.toString(), SCAN_FORMATS:'CODE_128,EAN_13,EAN_8,UPC_A,UPC_E,QR_CODE' });
-    return `zxing://scan/?${params.toString()}`;
-  }
-  function applyQueryPrefill(){
-    const q = new URLSearchParams(window.location.search);
-    const nro = q.get('numero') || q.get('nro');
-    if (nro){ numeroInput.value = nro.trim(); lookup(nro.trim()); }
-  }
+
   btnScan.addEventListener('click', openScanner);
   scanClose.addEventListener('click', closeScanner);
   document.addEventListener('click', (e)=>{ if (!scanModal.classList.contains('open')) return; if (e.target===scanModal){ closeScanner(); } });
 
-  // ===== Init =====
+  // Init
   document.addEventListener('DOMContentLoaded', ()=>{
-    numeroInput.focus();               // foco al abrir
-    warmupCacheOnLoad(); startAutoRefresh();
-    const zxing = buildZxingLink(); btnScanApp.setAttribute('href', zxing);
-    applyQueryPrefill();
-
-    // Ocultar "Abrir app de escaneo" si no aporta (no Android o ya tenemos detector nativo)
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    if (!isAndroid || ('BarcodeDetector' in window)) { btnScanApp.style.display='none'; }
+    numeroInput.focus();     // foco al abrir
+    warmupCacheOnLoad();     // precalienta caché
+    startAutoRefresh();      // revalida cada 15'
   });
 </script>
 </body>
