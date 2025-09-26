@@ -65,7 +65,7 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1> v4 Registrar entrega / pago de saldo</h1>
+      <h1>V 1 Registrar entrega / pago de saldo</h1>
 
       <label for="numero">Número de trabajo</label>
       <div class="input-row">
@@ -166,7 +166,7 @@
   </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZxtYLzTEhqu7YVp_Ha__tgW6jc3rp8gMjuHDR0wrrAcCzVlcmGXpEAQmLQk7gFKW_oQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7d7pnofOqSd-5WCUPLq07HQL9V5FLbPkjerVgusXX9UUsVzpOrkYh_45dXvGTffgGng/exec';
 
   // ===== DOM =====
   const $ = (id)=>document.getElementById(id);
@@ -275,19 +275,54 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZxtYLzTEhqu7YVp_Ha
   function hideLista(){ listaWrap.classList.add('hidden'); listaTable.innerHTML=''; }
 
   function renderEntregaInfo(item){
-    entregaInfo.textContent=''; entregaInfo.classList.add('hidden'); if(!item) return;
-    const fecha=pick(item,['entregadoEl','fechaEntrega','entregadoFecha','fechaHora','fecha_y_hora','fecha_entrega','fh','fecha']);
-    const quien=pick(item,['entregadoPor','entrego','vendedorEntrega','entregado_por','entrega_por']);
-    const medio=pick(item,['fdm','medioPago','formaDePago','pagoMedio','medio_pago']);
-    const otro =pick(item,['fdmOtro','medioPagoOtro','otro','pago_otro']);
-    const monto=pick(item,['cancelo','monto','importe','pagado','pago_importe']);
-    if (fecha||quien||medio||monto){
-      const medioTxt=(medio==='OTRO'&&otro)?`OTRO (${otro})`:(medio||'');
-      const partes=[]; if(fecha)partes.push(`Entregado el ${fecha}`); if(quien)partes.push(`por ${quien}`);
-      if(medioTxt)partes.push(`• FDM: ${medioTxt}`); if(monto)partes.push(`• Importe: ${monto}`);
-      entregaInfo.textContent=partes.join(' '); entregaInfo.classList.remove('hidden');
+  entregaInfo.textContent = '';
+  entregaInfo.classList.add('hidden');
+  if (!item) return;
+
+  // Señales que vienen del Apps Script
+  const flagEntregado = item.entregado === true;
+  const fechaApi      = (item.fechaEntregado || '').toString().trim();
+  const quienApi      = (item.entregadoPor || '').toString().trim();
+
+  // Back-compat: si venís de otras versiones, seguimos leyendo
+  const fechaBk = pick(item, [
+    'entregadoEl','fechaEntrega','entregadoFecha','fechaHora',
+    'fecha_y_hora','fecha_entrega','fh','fecha'
+  ]);
+  const quienBk = pick(item, [
+    'entregadoPor','entrego','vendedorEntrega','entregado_por','entrega_por'
+  ]);
+  const medio   = pick(item, ['fdm','medioPago','formaDePago','pagoMedio','medio_pago']);
+  const otro    = pick(item, ['fdmOtro','medioPagoOtro','otro','pago_otro']);
+  const monto   = pick(item, ['cancelo','monto','importe','pagado','pago_importe']);
+
+  const fecha = fechaApi || fechaBk;
+  const quien = quienApi || quienBk;
+  const medioTxt = (medio === 'OTRO' && otro) ? `OTRO (${otro})` : (medio || '');
+
+  // Si EITHER: flagEntregado o hay datos sueltos, mostramos la línea
+  if (flagEntregado || fecha || quien || medioTxt || monto){
+    const partes = [];
+    if (fecha) partes.push(`Entregado el ${fecha}`);
+    if (quien) partes.push(`por ${quien}`);
+    if (medioTxt) partes.push(`• FDM: ${medioTxt}`);
+    if (monto) partes.push(`• Importe: ${monto}`);
+
+    entregaInfo.textContent = partes.join(' ');
+    entregaInfo.classList.remove('hidden');
+
+    // Deshabilitar el botón si ya figura entregado
+    if (flagEntregado) {
+      btnEntregar.setAttribute('disabled', 'true');
+      saveMsg.textContent = '✔ Marcado como ENTREGADO';
+      saveMsg.classList.remove('hidden');
     }
+  } else {
+    // Si no hay data, dejamos habilitado (el renderMontos también lo controla por saldo)
+    saveMsg.classList.add('hidden');
   }
+}
+
 
   let currentNumero=null, currentRawItem=null;
 
@@ -302,6 +337,14 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZxtYLzTEhqu7YVp_Ha
     status.textContent=`Elegido N° ${numero}`;
     hideLista(); resultado.classList.remove('hidden'); resetFormFields();
     renderMontos(item); renderEntregaInfo(item); entregadoPor.focus();
+    renderMontos(item);
+renderEntregaInfo(item);
+
+// NUEVO: si ya vino marcado como entregado desde el backend
+if (item.entregado === true) {
+  btnEntregar.setAttribute('disabled', 'true');
+}
+
     if (numero) saveToCache(String(numero), item);
     // cargar historial de pagos
     try{ const pagos=await fetchPagos(numero); renderPagos(pagos); }
