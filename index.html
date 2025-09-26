@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Entrega • Óptica Cristal</title>
+<link rel="icon" href="logo.png" />
+<style>
+  :root { --bg:#0b1220; --card:#121a2b; --text:#e8eefc; --muted:#9fb0d6; --accent:#7cc0ff; }
+  *{box-sizing:border-box}
+  body{margin:0; font:16px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text);}
+  .wrap{max-width:520px;margin:24px auto;padding:16px}
+  .card{background:var(--card);border:1px solid #1e2a42;border-radius:14px;padding:16px;box-shadow:0 6px 22px rgba(0,0,0,.25)}
+  h1{margin:0 0 12px 0;font-size:20px}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+  input,select,button{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #2a3b5f;background:#0e1626;color:var(--text)}
+  input::placeholder{color:#6e82ad}
+  button{background:var(--accent); color:#05223a; font-weight:700; border:none; cursor:pointer}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .ok{color:#8fffb3;margin-top:8px}
+  .err{color:#ff9c9c;margin-top:8px}
+  .muted{color:var(--muted)}
+  .hidden{display:none}
+  .pill{display:inline-block;background:#0f223a;border:1px solid #294a78;color:#b8d5ff;border-radius:999px;padding:6px 10px;margin-top:6px}
+  .hr{height:1px;background:#203152;margin:14px 0}
+
+  /* === Lista de coincidencias === */
+  .table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px;
+           background:#0e1626; border:1px solid #2a3b5f; border-radius: 10px; overflow: hidden; }
+  .table th, .table td { padding: 8px 10px; border-bottom: 1px solid #22324f; text-align: left; white-space: nowrap; }
+  .table tr:last-child td { border-bottom: 0; }
+  .table th { color:#b8d5ff; font-weight:600; background:#0f1a2c; }
+  .table tr { cursor: pointer; }
+  .table tr:hover { background:#0f223a; }
+  .table .num { font-weight:700; color:#9fd1ff; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px;
+           border:1px solid #294a78; color:#b8d5ff; background:#0f223a; }
+
+  /* Spinner “Buscando…” */
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid #6e82ad; border-top-color:transparent; border-radius:50%; vertical-align:-2px; animation:spin 1s linear infinite; margin-right:6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Accesibilidad foco tabla */
+  .table tr:focus { outline:2px solid #7cc0ff; outline-offset:-2px; }
+
+  /* ======== SCANNER (modal) ======== */
+  .input-row { display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; }
+  .scanBtn { padding:12px 14px; border-radius:10px; border:1px solid #2a3b5f; background:#113052; color:#b8d5ff; font-weight:700; }
+  .scanBtn:hover { background:#14365d; }
+
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    display: none; align-items: center; justify-content: center; padding: 16px; z-index: 9999;
+  }
+  .modal.show { display:flex; }
+  .modal-card {
+    width: min(520px, 96vw); background: var(--card); border:1px solid #1e2a42;
+    border-radius: 14px; padding: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.45);
+  }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .modal-title { font-weight:700; font-size:16px; }
+  .modal-actions { display:flex; gap:8px; }
+  .btn { padding:10px 12px; border-radius:10px; border:1px solid #2a3b5f; background:#0e1626; color:var(--text); cursor:pointer; }
+  .btn.primary { background: var(--accent); color:#05223a; border:none; font-weight:700; }
+  .btn[disabled]{ opacity:.6; cursor:not-allowed; }
+
+  .videoWrap {
+    position: relative; margin-top:10px; border-radius:12px; overflow:hidden;
+    border:1px solid #22324f; background:#000;
+  }
+  video { width:100%; height:auto; display:block; }
+  .reticle {
+    position:absolute; inset:10%; border:2px dashed rgba(255,255,255,.35); border-radius:12px; pointer-events:none;
+  }
+  .torchHint { margin-top:8px; font-size:12px; color:#9fb0d6; }
+  .supportWarn { margin-top:8px; font-size:13px; color:#ffcc99; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Registrar entrega / pago de saldo </h1>
+
+      <label for="numero">Número de trabajo</label>
+      <div class="input-row">
+        <input id="numero" type="text" inputmode="numeric" placeholder="Escribí el número y presioná Enter" autocomplete="off" />
+        <button id="scanBtn" class="scanBtn" type="button">📷 Escanear</button>
+      </div>
+      <div id="status" class="muted" aria-live="polite"></div>
+
+      <!-- Lista de coincidencias múltiples -->
+      <div id="listaWrap" class="hidden">
+        <div class="hr"></div>
+        <div class="muted">Coincidencias encontradas (elegí una)</div>
+        <div class="tableWrap" style="overflow:auto; max-height:260px; border-radius:10px; margin-top:6px;">
+          <table class="table" id="lista"></table>
+        </div>
+      </div>
+
+      <div id="resultado" class="hidden">
+        <div class="hr"></div>
+        <div class="muted">Paciente</div>
+        <div id="paciente" class="pill"></div>
+
+        <!-- Info si YA fue entregado/pagado antes -->
+        <div id="entregaInfo" class="muted" style="margin-top:8px;"></div>
+
+        <div class="hr"></div>
+
+        <label for="entregadoPor">¿Quién entregó?</label>
+        <input id="entregadoPor" type="text" placeholder="Nombre del vendedor/a que entregó" autocomplete="off" />
+
+        <div class="row">
+          <div>
+            <label for="cancelo">¿Cuánto pagó?</label>
+            <input id="cancelo" type="number" step="0.01" placeholder="0.00" inputmode="decimal" />
+          </div>
+          <div>
+            <label for="fdm">¿Cómo pagó?</label>
+            <select id="fdm">
+              <option value="">Elegí una opción…</option>
+              <option>EFECTIVO</option>
+              <option>TARJETA 1P</option>
+              <option>TARJETA 3P</option>
+              <option>TARJETA 6P</option>
+              <option>TARJETA 12P</option>
+              <option>TRANSFERENCIA</option>
+              <option>MERCADO PAGO</option>
+              <option>OTRO</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Campo libre SOLO si elige OTRO -->
+        <div id="wrapFdmOtro" class="hidden">
+          <label for="fdmOtro">Especificá el medio de pago</label>
+          <input id="fdmOtro" type="text" placeholder="Ej: CHEQUE, VALE, PROMO X, etc." autocomplete="off" />
+        </div>
+
+        <div class="hr"></div>
+        <button id="guardarBtn" disabled>Guardar</button>
+        <div id="saveMsg" class="ok hidden">✔ Guardado</div>
+        <div id="saveErr" class="err hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==== MODAL SCANNER ==== -->
+  <div id="scannerModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="scanTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div id="scanTitle" class="modal-title">Escanear código de barras / QR</div>
+        <div class="modal-actions">
+          <button id="torchBtn" class="btn" type="button" disabled>Linterna</button>
+          <button id="closeScan" class="btn" type="button">Cancelar</button>
+        </div>
+      </div>
+      <div id="supportWarn" class="supportWarn hidden">Tu navegador no soporta lectura nativa de códigos (BarcodeDetector). Probá con Chrome en Android.</div>
+      <div class="videoWrap">
+        <video id="video" playsinline muted></video>
+        <div class="reticle"></div>
+      </div>
+      <div class="torchHint">Poné el código dentro del marco. Se completa automáticamente al detectar.</div>
+      <div id="scanStatus" class="muted" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+<script>
+  // === TU URL DE APP SCRIPT ===
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2oao4ZVckDweyVZJ1u9rlH72xS4d8UEIR72qxG5fQOuSM4ooLWL9a17lTVD93AzloaQ/exec';
+
+  const $ = (id)=>document.getElementById(id);
+  const numeroInput = $('numero');
+  const status = $('status');
+  const listaWrap = $('listaWrap');
+  const listaTable = $('lista');
+  const resultado = $('resultado');
+  const paciente = $('paciente');
+  const entregaInfo = $('entregaInfo');
+  const entregadoPor = $('entregadoPor');
+  const cancelo = $('cancelo');
+  const fdm = $('fdm');
+  const fdmOtroWrap = $('wrapFdmOtro');
+  const fdmOtro = $('fdmOtro');
+  const guardarBtn = $('guardarBtn');
+  const saveMsg = $('saveMsg');
+  const saveErr = $('saveErr');
+
+  // Scanner elements
+  const scanBtn = $('scanBtn');
+  const modal = $('scannerModal');
+  const video = $('video');
+  const closeScan = $('closeScan');
+  const torchBtn = $('torchBtn');
+  const supportWarn = $('supportWarn');
+  const scanStatus = $('scanStatus');
+
+  let currentNumero = null;
+  let currentRawItem = null; // guardamos el objeto elegido para leer datos previos de entrega
+
+  // ========= UTIL =========
+  function withParams(base, params){
+    const u = new URL(base);
+    Object.entries(params).forEach(([k,v]) => (v!==undefined && v!==null) && u.searchParams.set(k, v));
+    return u.toString();
+  }
+  const normStr = (v)=> (v==null ? '' : String(v)).trim();
+  function setStatusLoading(msg='Buscando…'){
+    status.innerHTML = '<span class="spinner" aria-hidden="true"></span>' + msg;
+  }
+  function clearStatus(){ status.textContent = ''; }
+
+  // Pick flexible keys (por si vienen con nombres distintos)
+  function pick(obj, keys){
+    for (const k of keys){
+      if (obj && obj[k] != null && String(obj[k]).toString().trim() !== '') return String(obj[k]);
+    }
+    return '';
+  }
+
+  // Mostrar info de entrega previa si existe
+  function renderEntregaInfo(item){
+    currentRawItem = item || null;
+    entregaInfo.textContent = '';
+    entregaInfo.classList.add('hidden');
+
+    if (!item) return;
+
+    const fecha = pick(item, ['entregadoEl','fechaEntrega','entregadoFecha','fechaHora','fecha_y_hora','fecha_entrega','fh','fecha']);
+    const quien = pick(item, ['entregadoPor','entrego','vendedorEntrega','entregado_por','entrega_por']);
+    const medio = pick(item, ['fdm','medioPago','formaDePago','pagoMedio','medio_pago']);
+    const otro  = pick(item, ['fdmOtro','medioPagoOtro','otro','pago_otro']);
+    const monto = pick(item, ['cancelo','monto','importe','pagado','pago_importe']);
+
+    if (fecha || quien || medio || monto){
+      const medioTxt = (medio === 'OTRO' && otro) ? `OTRO (${otro})` : (medio || '');
+      const partes = [];
+      if (fecha) partes.push(`Entregado el ${fecha}`);
+      if (quien) partes.push(`por ${quien}`);
+      if (medioTxt) partes.push(`• FDM: ${medioTxt}`);
+      if (monto) partes.push(`• Importe: ${monto}`);
+
+      entregaInfo.textContent = partes.join(' ');
+      entregaInfo.classList.remove('hidden');
+    }
+  }
+
+  // ========= TABLA MULTI =========
+  function renderLista(items){
+    listaTable.innerHTML = '';
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+      <tr>
+        <th>N°</th>
+        <th>Paciente</th>
+        <th>DNI</th>
+        <th>Tel.</th>
+        <th>Estado</th>
+        <th>Retira</th>
+      </tr>`;
+    const tbody = document.createElement('tbody');
+
+    items.forEach(it=>{
+      const tr = document.createElement('tr');
+      tr.tabIndex = 0;
+      tr.innerHTML = `
+        <td class="num">${normStr(it.numero || it.nro || it.num)}</td>
+        <td>${normStr(it.nombre || it.paciente)}</td>
+        <td>${normStr(it.dni)}</td>
+        <td>${normStr(it.telefono || it.tel)}</td>
+        <td>${normStr(it.estado) ? `<span class="badge">${it.estado}</span>`:''}</td>
+        <td>${normStr(it.retira || it.fechaRetira || it.retiro)}</td>
+      `;
+      tr.addEventListener('click', ()=> chooseItem(it));
+      tr.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter') chooseItem(it); });
+      tbody.appendChild(tr);
+    });
+
+    listaTable.appendChild(thead);
+    listaTable.appendChild(tbody);
+    listaWrap.classList.remove('hidden');
+  }
+  function hideLista(){
+    listaWrap.classList.add('hidden');
+    listaTable.innerHTML = '';
+  }
+
+  function resetFormFields(){
+    entregadoPor.value = '';
+    cancelo.value = '';
+    fdm.value = '';
+    fdmOtro.value = '';
+    fdmOtroWrap.classList.add('hidden');
+  }
+
+  function chooseItem(item){
+    const numero = item.numero || item.nro || item.num;
+    currentNumero = numero;
+    paciente.textContent = normStr(item.nombre || item.paciente) || '(sin nombre)';
+    status.textContent  = `Elegido N° ${numero}`;
+    hideLista();
+    resultado.classList.remove('hidden');
+    guardarBtn.disabled = false;
+    resetFormFields();
+    renderEntregaInfo(item); // 👈 muestra info previa si existe
+    entregadoPor.focus();
+  }
+
+  // ========= LOOKUP =========
+  async function lookup(numero){
+    setStatusLoading();
+    hideLista();
+    resultado.classList.add('hidden');
+    entregaInfo.classList.add('hidden');
+    saveMsg.classList.add('hidden');
+    saveErr.classList.add('hidden');
+    guardarBtn.disabled = true;
+    currentNumero = null;
+    currentRawItem = null;
+
+    try{
+      const url = withParams(SCRIPT_URL, { action:'lookup', numero });
+      const res = await fetch(url, { method:'GET' });
+      if (!res.ok) throw new Error('Error de red');
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        if (data.length === 0) throw new Error('No encontrado');
+        if (data.length === 1) { chooseItem(data[0]); }
+        else {
+          status.textContent = `Se encontraron ${data.length} coincidencias`;
+          renderLista(data);
+        }
+        return;
+      }
+
+      if (data.ok === false){
+        clearStatus();
+        throw new Error(data.error || 'No encontrado');
+      }
+
+      const list = data.items || data.results;
+      if (Array.isArray(list)) {
+        if (list.length === 0) throw new Error('No encontrado');
+        if (list.length === 1) { chooseItem(list[0]); }
+        else {
+          status.textContent = `Se encontraron ${list.length} coincidencias`;
+          renderLista(list);
+        }
+      } else {
+        // único objeto
+        currentNumero = numero;
+        paciente.textContent = normStr(data.nombre || data.paciente) || '(sin nombre)';
+        status.textContent = `Encontrado N° ${numero}`;
+        resultado.classList.remove('hidden');
+        guardarBtn.disabled = false;
+        resetFormFields();
+        renderEntregaInfo(data); // 👈 muestra info previa si existe
+        entregadoPor.focus();
+      }
+    }catch(e){
+      clearStatus();
+      resultado.classList.add('hidden');
+      hideLista();
+      alert(e.message || 'Error buscando');
+    }
+  }
+
+  // ========= SAVE =========
+  async function save(){
+    saveMsg.classList.add('hidden');
+    saveErr.classList.add('hidden');
+
+    const ep  = normStr(entregadoPor.value);
+    const aj  = normStr(cancelo.value);
+    const ak  = normStr(fdm.value);
+    const akOtro = normStr(fdmOtro.value);
+
+    if (!currentNumero){
+      saveErr.textContent = 'Primero buscá y elegí un número válido.';
+      saveErr.classList.remove('hidden');
+      return;
+    }
+    if (!ep){
+      saveErr.textContent = 'Completá "Quién entregó".';
+      saveErr.classList.remove('hidden');
+      entregadoPor.focus();
+      return;
+    }
+    if (!ak){
+      saveErr.textContent = 'Elegí el medio de pago.';
+      saveErr.classList.remove('hidden');
+      fdm.focus();
+      return;
+    }
+    if (ak === 'OTRO' && !akOtro){
+      saveErr.textContent = 'Especificá el medio de pago en "OTRO".';
+      saveErr.classList.remove('hidden');
+      fdmOtro.focus();
+      return;
+    }
+
+    guardarBtn.disabled = true;
+    const oldTxt = guardarBtn.textContent;
+    guardarBtn.textContent = 'Guardando…';
+
+    try{
+      const url = withParams(SCRIPT_URL, {
+        action:'save',
+        numero: currentNumero,
+        entregadoPor: ep,
+        cancelo: aj,
+        fdm: ak,
+        fdmOtro: akOtro
+      });
+      const res = await fetch(url, { method:'GET' });
+      if (!res.ok) throw new Error('Error de red');
+      const data = await res.json();
+
+      if (data.ok === false){
+        throw new Error(data.error || 'No se pudo guardar');
+      }
+      saveErr.classList.add('hidden');
+      saveMsg.classList.remove('hidden');
+      guardarBtn.textContent = oldTxt;
+      guardarBtn.disabled = false;
+
+      // Actualizamos el “entregaInfo” con lo recién guardado
+      renderEntregaInfo({
+        ...(currentRawItem || {}),
+        entregadoPor: ep,
+        cancelo: aj,
+        fdm: ak,
+        fdmOtro: akOtro,
+        entregadoEl: pick(data, ['fecha','fechaEntrega','entregadoEl','fh','fechaHora']) || pick(currentRawItem||{}, ['entregadoEl','fechaEntrega','fechaHora']) || ''
+      });
+    }catch(e){
+      saveErr.textContent = e.message || 'Error guardando';
+      saveErr.classList.remove('hidden');
+      guardarBtn.textContent = oldTxt;
+      guardarBtn.disabled = false;
+    }
+  }
+
+  // ---- Eventos base ----
+  numeroInput.addEventListener('keydown', (ev)=>{
+    if (ev.key === 'Enter'){
+      const val = normStr(numeroInput.value);
+      if (val) lookup(val);
+    }
+  });
+  $('guardarBtn').addEventListener('click', save);
+
+  // 👇 **NUEVO**: mostrar/ocultar campo “OTRO”
+  fdm.addEventListener('change', ()=>{
+    const isOtro = fdm.value === 'OTRO';
+    fdmOtroWrap.classList.toggle('hidden', !isOtro);
+    if (!isOtro) fdmOtro.value = '';
+  });
+
+  // ========= SCANNER: BarcodeDetector simple =========
+  let stream = null;
+  let detector = null;
+  let scanning = false;
+  let videoTrack = null;
+  let torchOn = false;
+
+  async function startScanner(){
+    const supported = ('BarcodeDetector' in window);
+    supportWarn.classList.toggle('hidden', supported);
+    if (supported){
+      try {
+        detector = new window.BarcodeDetector({
+          formats: ['ean-13','ean-8','code-128','code-39','upc-a','upc-e','itf','codabar','qr_code']
+        });
+      } catch(e) { detector = null; }
+    } else {
+      detector = null;
+    }
+
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play();
+      videoTrack = stream.getVideoTracks()[0];
+
+      const caps = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
+      torchBtn.disabled = !(caps && 'torch' in caps);
+      torchOn = false;
+
+      scanning = true;
+      scanStatus.textContent = detector ? 'Apuntá al código…' : 'Tu navegador no soporta lectura nativa. Ingresá el número manualmente.';
+      requestAnimationFrame(scanLoop);
+    }catch(err){
+      scanStatus.textContent = 'No se pudo abrir la cámara. Revisá permisos.';
+    }
+  }
+
+  async function scanLoop(){
+    if (!scanning) return;
+    try{
+      if (detector){
+        const barcodes = await detector.detect(video);
+        if (barcodes && barcodes.length){
+          const value = String(barcodes[0].rawValue || '').trim();
+          if (value){
+            onCodeDetected(value);
+            return;
+          }
+        }
+      }
+    }catch(e){}
+    requestAnimationFrame(scanLoop);
+  }
+
+  function onCodeDetected(value){
+    scanning = false;
+    stopScanner();
+    const soloDigitos = value.replace(/[^\d]/g,'');
+    numeroInput.value = soloDigitos || value;
+    if (numeroInput.value.trim()){
+      lookup(numeroInput.value.trim());
+    }
+  }
+
+  function stopScanner(){
+    if (videoTrack){ videoTrack.stop(); videoTrack = null; }
+    if (stream){ stream.getTracks().forEach(t=>t.stop()); stream = null; }
+    scanning = false;
+    detector = null;
+    torchOn = false;
+    torchBtn.disabled = true;
+    video.srcObject = null;
+    scanStatus.textContent = '';
+  }
+
+  async function toggleTorch(){
+    if (!videoTrack) return;
+    try{
+      await videoTrack.applyConstraints({ advanced: [{ torch: !torchOn }] });
+      torchOn = !torchOn;
+      torchBtn.textContent = torchOn ? 'Linterna (ON)' : 'Linterna';
+    }catch(e){}
+  }
+
+  // Abrir / cerrar modal
+  scanBtn.addEventListener('click', async ()=>{
+    modal.classList.add('show');
+    await startScanner();
+  });
+  closeScan.addEventListener('click', ()=>{
+    modal.classList.remove('show');
+    stopScanner();
+  });
+  torchBtn.addEventListener('click', toggleTorch);
+  modal.addEventListener('click', (e)=>{
+    if (e.target === modal){
+      modal.classList.remove('show');
+      stopScanner();
+    }
+  });
+  window.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape' && modal.classList.contains('show')){
+      modal.classList.remove('show');
+      stopScanner();
+    }
+  });
+</script>
+</body>
+</html>
