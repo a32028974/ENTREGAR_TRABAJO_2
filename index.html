@@ -65,7 +65,7 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>V 1 Registrar entrega / pago de saldo</h1>
+      <h1>V2 Registrar entrega / pago de saldo</h1>
 
       <label for="numero">Número de trabajo</label>
       <div class="input-row">
@@ -423,33 +423,53 @@ if (item.entregado === true) {
   }
 
   // ===== Marcar como ENTREGADO (solo si saldo=0) =====
-  async function marcarEntregado(){
-    saveMsg.classList.add('hidden'); saveErr.classList.add('hidden');
-    const vendedor=normStr(entregadoPor.value)||'(sin nombre)';
-    const saldoTxt = mSaldo.textContent || '$0';
-    const saldoNum = Number(String(saldoTxt).replace(/\./g,'').replace(',', '.').replace(/[^0-9\.\-]/g,''));
-    if (saldoNum>0){ saveErr.textContent='Aún hay saldo pendiente. No se puede marcar como entregado.'; saveErr.classList.remove('hidden'); return; }
+async function marcarEntregado(){
+  saveMsg.classList.add('hidden'); 
+  saveErr.classList.add('hidden');
 
-    btnEntregar.disabled=true; btnEntregar.textContent='Marcando…';
-    try{
-      const url=withParams(SCRIPT_URL,{ action:'entregar', numero:currentNumero, entregadoPor:vendedor });
-      const res=await fetch(url,{method:'GET',cache:'no-store'});
-      if(!res.ok) throw new Error('Error de red');
-      const data=await res.json();
-      if(data.ok===false) throw new Error(data.error || 'No se pudo marcar como entregado');
-
-      // mostrar cartel y línea informativa
-      saveMsg.textContent='✔ Marcado como ENTREGADO'; saveMsg.classList.remove('hidden');
-      const fecha = pick(data, ['fecha','fechaEntrega','entregadoEl','fh','fechaHora']) || '';
-      currentRawItem = { ...(currentRawItem||{}), entregadoPor:vendedor, entregadoEl:fecha };
-      renderEntregaInfo(currentRawItem);
-    }catch(e){
-      saveErr.textContent = e.message || 'Error al marcar como entregado'; saveErr.classList.remove('hidden');
-      btnEntregar.disabled=false;
-    }finally{
-      btnEntregar.textContent='Marcar como ENTREGADO';
-    }
+  // 1) Validar NOMBRE obligatorio
+  const vendedor = normStr(entregadoPor.value);
+  if (!vendedor){
+    saveErr.textContent = 'Completá "Vendedor/a" antes de marcar como ENTREGADO.';
+    saveErr.classList.remove('hidden');
+    entregadoPor.focus();
+    return;
   }
+
+  // 2) Validar que no haya saldo
+  const saldoTxt = mSaldo.textContent || '$0';
+  const saldoNum = Number(String(saldoTxt).replace(/\./g,'').replace(',', '.').replace(/[^0-9\.\-]/g,''));
+  if (saldoNum > 0){
+    saveErr.textContent = 'Aún hay saldo pendiente. No se puede marcar como entregado.';
+    saveErr.classList.remove('hidden');
+    return;
+  }
+
+  // 3) Marcar como ENTREGADO
+  btnEntregar.disabled = true;
+  btnEntregar.textContent = 'Marcando…';
+  try{
+    const url = withParams(SCRIPT_URL, { action:'entregar', numero: currentNumero, entregadoPor: vendedor });
+    const res = await fetch(url, { method:'GET', cache:'no-store' });
+    if (!res.ok) throw new Error('Error de red');
+    const data = await res.json();
+    if (data.ok === false) throw new Error(data.error || 'No se pudo marcar como entregado');
+
+    saveMsg.textContent = '✔ Marcado como ENTREGADO';
+    saveMsg.classList.remove('hidden');
+
+    const fecha = pick(data, ['fecha','fechaEntrega','entregadoEl','fh','fechaHora']) || '';
+    currentRawItem = { ...(currentRawItem||{}), entregadoPor: vendedor, entregadoEl: fecha, entregado: true };
+    renderEntregaInfo(currentRawItem);
+  }catch(e){
+    saveErr.textContent = e.message || 'Error al marcar como entregado';
+    saveErr.classList.remove('hidden');
+    btnEntregar.disabled = false;
+  }finally{
+    btnEntregar.textContent = 'Marcar como ENTREGADO';
+  }
+}
+
 
   // ===== Eventos =====
   numeroInput.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter'){ const v=normStr(numeroInput.value); if(v) lookup(v); } });
